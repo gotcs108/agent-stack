@@ -75,23 +75,27 @@ agent-debugger traces/<session-id>.jsonl --break-on antibot_detected
 # Open agent-viewer/index.html, drag-drop the .jsonl
 ```
 
-## How this compares to Vercel's "Agent Native"
+## How this compares to Vercel's Zero
 
-Vercel's recent agent-native push (AI SDK + Agents primitive + AI Gateway + platform observability) and this stack are **different layers, not direct competitors**.
+[Vercel Labs Zero](https://github.com/vercel-labs/zero) (released May 15, 2026) is a systems programming language designed so AI agents can read compiler output, parse typed repair metadata, and ship code without parsing human prose. Effects are explicit in function signatures via a `World` capability; `zero check --json` emits stable error codes like `NAM003` with `repair: { id: "declare-missing-symbol" }`; the CLI ships `zero explain` and `zero fix --plan --json` to close the repair loop.
 
-| Concern | Vercel Agent Native | agent-stack |
-|---------|---------------------|-------------|
-| **Audience** | Full-stack devs building agent products | Engineers debugging browser-agent runs |
-| **Layer** | Framework + runtime + hosting | Schema + browser instrumentation |
-| **Observability** | Service-call / API-level traces | Browser-DOM + agent-decision events |
-| **Deployment** | Cloud (Vercel platform) | Local-first, JSONL on disk |
-| **Lock-in** | Platform-bound | OSS, no platform required |
-| **Browser awareness** | None — agents are server-side primitives | Whole point of the stack |
-| **Failure taxonomy** | Generic error spans | Enum of browser-agent failure modes (antibot, login, MFA, …) |
+agent-stack is at a **different layer** than Zero. The two are orthogonal — you could build a Zero program that drives a browser and want both.
 
-Vercel ships the agent's *body*. This stack ships the agent's *eyes and nervous system* in the browser. If you build on Vercel and your agents run browsers, you'd want both — Vercel's observability misses what happens inside the page; this stack misses what happens between API calls.
+| Concern | Vercel Zero | agent-stack |
+|---------|-------------|-------------|
+| **What the agent does with it** | Writes code in it. Reads diagnostics, repairs itself. | Records what it did in a browser. Reads events, classifies failures. |
+| **Layer** | Language / compiler | Runtime / browser instrumentation |
+| **Surface to the agent** | `zero check --json`, typed diagnostics | `agent_trace.Tracer`, `agent-debugger` breakpoints |
+| **Primary failure modes addressed** | Type errors, missing identifiers, effect violations | Antibot detection, login failure, MFA, agent decision loops |
+| **Lifecycle phase** | Compile-time + dev loop | Run-time + post-mortem |
+| **Format** | JSON diagnostics (stable codes) | JSONL events (stable schema, enum reasons) |
+| **License** | Apache 2.0 | MIT |
 
-A future bridge would emit agent-trace events as OpenTelemetry spans for ingestion into Vercel (or any OTel backend). That's on the roadmap, not yet built.
+**Shared design philosophy.** Both stacks apply the same principle — *machines first, humans optional, JSON-structured with stable IDs* — at different layers. Zero applies it to the language/compiler interface; agent-stack applies it to the runtime/observability interface. An agent writing Zero code that drives a browser would use Zero's diagnostics to repair the code and agent-stack's traces to debug what the resulting binary did at runtime.
+
+**The natural bridge.** Zero's effect system declares *what kinds of side effects a function can perform*. agent-stack's schema captures *what side effects actually happened*. A future integration could have Zero programs emit agent-trace events from their `World` capability when they perform browser I/O — making the compile-time effect signature and the run-time event stream literally the same vocabulary. Not built. Tracking the design idea.
+
+Worth noting that Vercel's *broader* agent push (AI SDK + Agents primitive + v0 + AI Gateway + platform observability) is at yet another layer — framework + hosting. agent-stack is also orthogonal to that. None of these three (Zero, AI SDK, agent-stack) is a competitor to either of the others.
 
 ## Other comparisons
 
